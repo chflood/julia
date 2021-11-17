@@ -379,14 +379,12 @@ function wait(e::Event)
     end
     lock(e.notify) # acquire barrier
     try
-        while !e.set
-            wait(e.notify)
-            if e.autoreset
-                (@atomicswap :acquire_release e.set = false) && return
-            else
-                return
-            end
+        if e.autoreset
+            (@atomicswap :acquire_release e.set = false) && return
+        else
+            e.set && return
         end
+        wait(e.notify)
     finally
         unlock(e.notify) # release barrier
     end
